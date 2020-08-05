@@ -1,9 +1,14 @@
 from requests import Session
-from subprocess import Popen, PIPE
+import requests
 from lxml import html, etree
 import json
+import encryption
 
 class Gateway():
+
+	def loadConfig(self):
+		with open("config.json") as config:
+			return json.load(config)
 
 	def __init__(self):
 		self.s = Session()
@@ -13,6 +18,7 @@ class Gateway():
 		self.wizard = "http://192.168.254.254/html/wizard/wizard.html"
 		self.reboot = "http://192.168.254.254/api/service/reboot.cgi"
 		self.portmapping = "http://192.168.254.254/api/ntwk/portmapping"
+		self.config = self.loadConfig()
 
 		self.login()
 
@@ -35,13 +41,12 @@ class Gateway():
 		self.token = token
 
 	def getToken(self,param, token):
-		resp = Popen(["node", "login", param, token], stdout=PIPE)
-		token = resp.communicate()[0].decode().strip()
+		user=self.config["login"]["username"]
+		passw=self.config["login"]["password"]
+
+		token = encryption.getPassToken(user,passw,param,token)
 
 		return token
-
-	def changeToken(self,msg):
-		pass
 
 	def getPageKeys(self, text):
 		tree = html.fromstring(text)
@@ -88,16 +93,19 @@ class Gateway():
 		print("*"*50)
 		for i in resp_text_json:
 			if i["Active"] == True:
-				print(+i["HostName"]+"\n\n\t - "+i["IPAddress"]+"\n")
+				print(i["HostName"]+"\n\n\t - "+i["IPAddress"]+"\n")
+
+	def getCsrf(self):
+		return {"csrf":{"csrf_param": self.param, "csrf_token": self.token}}
 
 	def rebootGateway(self):
-		csrf = {"csrf":{"csrf_param": self.param, "csrf_token": self.token}}
+		csrf = self.getCsrf()
 
 		csrf_data = json.dumps(csrf)
 
-		resp = self.s.get(self.reboot, data=csrf_data)
+		resp = self.s.post(self.reboot, csrf_data)
 
-		print(resp.text)
+		print(str(resp)+" "+resp.text)
 
 	def changeDNSSetting(self,dnsPrimaryIP):
 		data = {"csrf":

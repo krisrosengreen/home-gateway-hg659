@@ -4,7 +4,7 @@ import sys
 a = sys.argv
 gw = g.Gateway()
 
-options = {"-d": gw.changeDNSSetting, "-h": gw.getHostInfo, "-p": gw.getPortmapping}
+options = {"-d": gw.changeDNSSetting, "-h": gw.getHostInfo, "-p": gw.getPortmapping, "-r": gw.rebootGateway}
 
 if (a[1] in options):
 	if len(a)==2:
